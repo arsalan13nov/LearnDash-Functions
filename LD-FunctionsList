@@ -1,0 +1,4 @@
+List of usefel LearnDash functions
+
+// To get user enrolled courses list, return an array of Course IDs
+learndash_user_get_enrolled_courses( $user_id );
