@@ -1,0 +1,74 @@
+// Adding Custom Configuration field in LearnDash Topicss
+add_filter( 'learndash_post_args', 'add_topic_option' );
+function add_topic_option( $post_args ) {
+
+	global $pagenow;
+	$topic_id = $_GET['post'];
+
+	// If in Topic Edit Screen
+	if ( $pagenow == 'post.php' && get_post_type( $topic_id ) == 'sfwd-topic' ) {
+		
+		$lesson_id = get_post_meta( $topic_id, 'lesson_id', true );
+
+		if( $lesson_id ) {
+	    	$courses = get_posts( array(
+				'posts_per_page' => -1, 
+				'post_type' => 'sfwd-topic', 
+				'post_status' => 'publish',
+				'post__not_in' => array( $topic_id ), 
+				'order' => 'DESC', 
+				'orderby' => 'ID',
+				'fields' => 'ids',
+				'meta_query' => array(
+				       array(
+				           'key' => 'lesson_id',
+				           'value' => $lesson_id ,
+				           'compare' => '=',
+				       )
+				   )
+			));
+	    }	    
+		
+	} // End if Topic Edit Screen
+
+	// If the courses have more than 1 topics then list them excluding the current topic.
+	if( is_array( $courses ) ) {
+		$course_array[0] = 'Please Select';
+
+		foreach( $courses as $course_id ) {
+			$course_array[$course_id] = get_the_title( $course_id ); 
+		}
+	} else {
+		$course_array = array();
+	}
+	
+	// New Topic field listing other topics of the same lesson.
+	$vcoursefield = array(
+		'visible_after_completed' => array(
+		'name' => __( 'Visible After Completed', 'learndash' ), 
+		'type' => 'select', // multiselect 
+		'initial_options' => $course_array,
+		'help_text' => __( 'Select Prerequisite Topics From Same Lesson', 'learndash' ), 
+		'default' => 0,
+		'show_in_rest' => true,
+	));
+
+	// New Topic field listing other topics of the same lesson.
+	unset( $course_array[0] );
+	$pre_req_topics_field = array(
+		'pre_requisite_topics' => array(
+		'name' => __( 'Prerequiite Topics', 'learndash' ), 
+		'class' => 'pre-req-topics',
+		'type' => 'multiselect', // multiselect 
+		'initial_options' => $course_array,
+		'help_text' => __( 'Select Prerequisite Topics From Same Lesson', 'learndash' ), 
+		'default' => 0,
+		'show_in_rest' => true,
+	));
+	
+	// Pass the new field in the topic fields array.
+	$post_args['sfwd-topic']['fields'] = array_merge( $pre_req_topics_field, $post_args['sfwd-topic']['fields'] );
+	$post_args['sfwd-topic']['fields'] = array_merge( $vcoursefield, $post_args['sfwd-topic']['fields'] );
+	
+	return $post_args;
+}
